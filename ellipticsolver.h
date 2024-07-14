@@ -8,14 +8,21 @@
 using namespace std;
 
 template <class T>
+T distance(T x1, T y1, T x2, T y2) {
+    return sqrt((x1 - x2)*(x1 - x2) + (y1 - y2)*(y1 - y2));
+}
+
+template <class T>
 class EllipticSolver
 {
 private:
     Matriz<T> L;
     Matriz<T> D;
     Matriz<T> U;
-    void buildSystem(double (*f)(double, double), double (*g1)(double), double (*g2)(double), double (*g3)(double), double (*g4)(double));
-    void SOR(double omega);
+    vector<T> x;
+    vector<T> y;
+    void buildSystem(T (*f)(T, T), T (*g1)(T), T (*g2)(T), T (*g3)(T), T (*g4)(T), T px, T py, T r);
+    void SOR(T omega);
 public:
     EllipticSolver(T xl, T xr, T yb, T yt, T dx, T dy); 
     ~EllipticSolver();
@@ -24,8 +31,9 @@ public:
     Matriz<T> phi; // Respuesta
     T xl, xr, yb, yt, dx, dy;
     int M, N;
-    int m, n;
-    void solve(double (*f)(double, double), double (*g1)(double), double (*g2)(double), double (*g3)(double), double (*g4)(double), double omega);
+    int m, n;    
+    void solve(T (*f)(T, T), T (*g1)(T), T (*g2)(T), T (*g3)(T), T (*g4)(T), T omega, T px, T py, T r);
+    void set_empty_disk(T px, T py, T r);
     void save(const string path);
 };
 
@@ -48,6 +56,10 @@ EllipticSolver<T>::EllipticSolver(T xl, T xr, T yb, T yt, T dx, T dy)
     cout << "N = " << N << endl;
     cout << "m = " << m << endl;
     cout << "n = " << n << endl;
+    x = vector<T>(m);
+    y = vector<T>(n);
+    for(int i = 0; i < m; i++) { x[i] = xl + i * dx; }
+    for(int j = 0; j < n; j++) { y[j] = yb + j * dy; }
 }
 
 template <class T>
@@ -56,17 +68,27 @@ EllipticSolver<T>::~EllipticSolver()
 }
 
 template <class T>
-void EllipticSolver<T>::buildSystem(double (*f)(double, double), double (*g1)(double), double (*g2)(double), double (*g3)(double), double (*g4)(double)) {
+void EllipticSolver<T>::set_empty_disk(T px, T py, T r) {    
+    T d; // distancia
+    for(int i = 0; i < m; i++) {
+        for(int j = 0; j < n; j++) {
+            d = distance(x[i], y[j], px, py);
+            if(d <= r) {
+                cout << x[i] << " " << y[j] << endl;
+                cout << phi(i, j) << endl;
+            }
+        }
+    }
+}
+
+template <class T>
+void EllipticSolver<T>::buildSystem(T (*f)(T, T), T (*g1)(T), T (*g2)(T), T (*g3)(T), T (*g4)(T), T px, T py, T r) {
     A = Matriz<T>(m*n, m*n); // ojo, n representa y, m representa x
     b = vector<T>(m*n);
     T dx2 = dx * dx;
     T dy2 = dy * dy;
 
-    vector<T> x(m);
-    vector<T> y(n);
-    
-    for(int i = 0; i < m; i++) { x[i] = xl + i * dx; }
-    for(int j = 0; j < n; j++) { y[j] = yb + j * dy; }
+
     cout << "x = " << x << endl;
     cout << "y = " << y << endl;
     
@@ -100,12 +122,23 @@ void EllipticSolver<T>::buildSystem(double (*f)(double, double), double (*g1)(do
         b[i + j*m] = g4(y[j]);
     }
 
-    //cout << A << endl;
-    //cout << b << endl;
+
+    // Force Phi(x,y) = 0 at some points
+    for(int i = 0; i < m; i++) {
+        for(int j = 0; j < n; j++) {
+            double d = distance(x[i], y[j], px, py);
+            if(d <= r) {
+                A(i + j*m, i + j*m) = -1000000;//;
+                //cout << A(i + j*m, i + j*m) << endl; //= 1.0;
+                b[i + j*m] = 1.0;
+            }
+        }
+    }
+
 }
 
 template <class T>
-void EllipticSolver<T>::SOR(double w) {
+void EllipticSolver<T>::SOR(T w) {
     // Construir matriz D, L y U
     D = Matriz<T>(A.nrow(), A.ncol());
     L = Matriz<T>(A.nrow(), A.ncol());
@@ -122,30 +155,31 @@ void EllipticSolver<T>::SOR(double w) {
 
     Matriz<T> wL = w * L;
     Matriz<T> inv = inversa(D + wL);
-    vector<T> x(b.size(), 1.00), xprev(b.size(), 0);
+    vector<T> xsol(b.size(), 0.0), xprev(b.size(), 0.0);
 
     cout << "Begin SOR" << endl;
-    int i = 0;
-    int max_iter = 200;
-    while(i < max_iter) {
-        xprev = x;
-        x = inv*((1 - w)*D*xprev - (w*U)*xprev) + (w*inv)*b;
-        if(norm2(xprev - x) < 1e-14) { cout << "TOL reached" << endl; break; }
-        i++;
+    int iter = 0;
+    int max_iter = 500;
+    while(iter < max_iter) {
+        xprev = xsol;
+
+        xsol = inv*((1 - w)*D*xprev - (w*U)*xprev) + (w*inv)*b;
+        if(norm2(xprev - xsol) < 1e-14) { cout << "TOL reached" << endl; break; }
+        iter++;
     }
     cout << "End SOR" << endl;
     
     phi = Matriz<T>(m, n);
     for(int i = 0; i < m; i++) {
         for(int j = 0; j < n; j++) {
-            phi(i, j) = x[i + j*m];
+            phi(i, j) = xsol[i + j*m];
         }
     }
 }
 
 template <class T>
-void EllipticSolver<T>::solve(double (*f)(double, double), double (*g1)(double), double (*g2)(double), double (*g3)(double), double (*g4)(double), double omega) {
-    buildSystem(f, g1, g2, g3, g4);
+void EllipticSolver<T>::solve(T (*f)(T, T), T (*g1)(T), T (*g2)(T), T (*g3)(T), T (*g4)(T), T omega, T px, T py, T r) {
+    buildSystem(f, g1, g2, g3, g4, px, py ,r);
     SOR(omega);
 }
 
