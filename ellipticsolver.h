@@ -26,6 +26,7 @@ public:
     int M, N;
     int m, n;
     void solve(double (*f)(double, double), double (*g1)(double), double (*g2)(double), double (*g3)(double), double (*g4)(double), double omega);
+    void save(const string path);
 };
 
 template <class T>
@@ -99,8 +100,8 @@ void EllipticSolver<T>::buildSystem(double (*f)(double, double), double (*g1)(do
         b[i + j*m] = g4(y[j]);
     }
 
-    cout << A << endl;
-    cout << b << endl;
+    //cout << A << endl;
+    //cout << b << endl;
 }
 
 template <class T>
@@ -146,6 +147,23 @@ template <class T>
 void EllipticSolver<T>::solve(double (*f)(double, double), double (*g1)(double), double (*g2)(double), double (*g3)(double), double (*g4)(double), double omega) {
     buildSystem(f, g1, g2, g3, g4);
     SOR(omega);
+}
+
+template <class T>
+void EllipticSolver<T>::save(const string path) {
+    phi.save(path);
+
+    ofstream myfile;
+    myfile.open(path + ".params");
+    myfile << "{" << endl;
+    myfile << "    \"xl\": " << xl << "," << endl;
+    myfile << "    \"xr\": " << xr << "," << endl;
+    myfile << "    \"yb\": " << yb << "," << endl;
+    myfile << "    \"yt\": " << yt << "," << endl;
+    myfile << "    \"M\": " << M << "," << endl;
+    myfile << "    \"N\": " << N <<  endl;
+    myfile << "}" << endl;
+    myfile.close();
 }
 
 #endif // ELLIPTICSOLVER_H
