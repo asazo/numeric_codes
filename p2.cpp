@@ -4,22 +4,22 @@
 
 //phi(x, 0) = g1(x)
 double g1(double x) {
-    return -1;
+    return log(x*x + 1);
 }
 
 //phi(x, 2) = g2(x)
 double g2(double x) {
-    return -1;
+    return log(x*x + 4);
 }
 
 //phi(0, y) = g3(y)
 double g3(double y) {
-    return 1;
+    return 2*log(y);
 }
 
 //phi(3, y) = g4(y)
 double g4(double y) {
-    return 1;
+    return log(y*y + 1);
 }
 
 double rho_0(double x, double y) {
@@ -28,21 +28,23 @@ double rho_0(double x, double y) {
 
 double rho(double x, double y) {
     double rho0 = rho_0(x, y);
-    200 * rho0 * (rho0 <= 0);
+    return 200 * rho0 * (rho0 <= 0);
 }
 
 double f(double x, double y) {
-    return -rho(x, y);
+    return 0.0; //-rho(x, y);
 }
 
 int main() {
     double xl = 0;
-    double xr = 3;
-    double yb = 0;
+    double xr = 1;
+    double yb = 1;
     double yt = 2;
-    double dx = 0.6;
-    double dy = 0.6;
+    double dx = 0.25;
+    double dy = 0.25;
+    double omega = 1.0;
     EllipticSolver ellipticsolver = EllipticSolver<double>(xl, xr, yb, yt, dx, dy);
-    ellipticsolver.solve(f, g1, g2 ,g3, g4);
+    ellipticsolver.solve(f, g1, g2 ,g3, g4, omega);
+    cout << ellipticsolver.phi << endl;
     return 0;
 }

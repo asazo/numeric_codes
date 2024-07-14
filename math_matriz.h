@@ -13,6 +13,7 @@
 #include <iomanip>
 #include <string>
 #include <fstream>
+#include <assert.h>
 
 using namespace std;
 
@@ -40,14 +41,18 @@ class Matriz
     vector<T> row(int);                         // obtener fila
     vector<T> col(int);                         // obtener columna 
     void save(string);                          // guardar a disco
-
     //Matriz<T> transpuesta(const Matriz<T> &);    // matriz transpuesta
-    //Matriz<T> gauss(const Matriz<T> &);         // eliminacion gaussiana
-    //T determinante(const Matriz<T> &);  // determinante
-    //Matriz<T> inversa(const Matriz<T> &);       // matriz inversa
+    
+    
 };
 
-                        /*Implementacion de la clase*/
+template <class T>
+T determinante(const Matriz<T> &);          // determinante
+template <class T>
+Matriz<T> inversa(const Matriz<T> &);       // matriz inversa
+
+
+/*Implementacion de la clase*/
 
 // Constructor por defecto
 template <class T>
@@ -213,7 +218,7 @@ template <class T>
 Matriz<T> operator + (Matriz<T> & a1, Matriz<T> & b1)
 {
     Matriz<T> suma(a1.nrow(), a1.ncol());
-    for (int i = 0; i < a1.filas(); i+=1)
+    for (int i = 0; i < a1.nrow(); i+=1)
     {
         for (int j = 0; j < a1.ncol(); j+=1)
         {
@@ -240,7 +245,7 @@ Matriz<T> operator - (Matriz<T> & a1, Matriz<T> & b1)
 
 // Producto de escalar 
 template <class T>
-Matriz<T> operator * (T a1, const Matriz<T> & b1)
+Matriz<T> operator * (T a1, Matriz<T> & b1)
 {
     Matriz<T> producto(b1.nrow(), b1.ncol());
     for (int i = 0; i < b1.nrow(); i+=1)
@@ -284,14 +289,50 @@ Matriz<T> operator * (const Matriz<T> & a1, const Matriz<T> & b1)
     return producto;
 }
 
-/*
-    ¿Por qué los siguientes metodos fallan al declararlos en public y declarar que pertenecen a la
-    clase Matriz<T>? es decir
+// Sobrecarga del operador <<
+template <class T>
+ostream & operator << (ostream & os, vector<T> v) {
+    os << "[";
+    for(int i = 0; i < v.size(); i++) {
+        os << v[i];
+        if(i + 1 < v.size()) {
+            os << ", ";
+        }
+    }
+    os << "]";
+    return os;
+}
 
-    Matriz<T> Matri<T> transpuesta(const Matriz<T> & M){}...etc  
-    
-    Al implementar los metodos de esa forma genera un error
-*/
+// Suma dos vectores
+template <class T>
+vector<T> operator + (const vector<T> & v1, const vector<T> v2) {
+    assert(v1.size() == v2.size());
+    vector<T> res(v1.size());
+    for(int i = 0; i < v1.size(); i++) {
+        res[i] = v1[i] + v2[i];
+    }
+    return res;
+}
+
+// Resta dos vectores
+template <class T>
+vector<T> operator - (const vector<T> & v1, const vector<T> v2) {
+    assert(v1.size() == v2.size());
+    vector<T> res(v1.size());
+    for(int i = 0; i < v1.size(); i++) {
+        res[i] = v1[i] - v2[i];
+    }
+    return res;
+}
+
+// Norma de vector
+template <class T>
+T norm2(const vector<T> & v) {
+    T res = 0.0;
+    for(int i = 0; i < v.size(); i++) { res += (v[i] * v[i]); }
+    return sqrt(res);
+}
+
 
 ///////////// Transpuesta /////////////
 template <class T>
@@ -312,7 +353,7 @@ Matriz<T> transpuesta(const Matriz<T> & M)
     return m_transpuesta;
 }
 
-/*///////////// Eliminacion Gaussiana /////////////
+///////////// Eliminacion Gaussiana /////////////
 int contador = 0; // variable global
 template <class T>
 Matriz<T> gauss(const Matriz<T> & x)
@@ -426,7 +467,6 @@ Matriz<T> inversa(const Matriz<T> & x)
     }
     return m_inversa;
 }
-*/
 
 template <class T>
 void Matriz<T>::save(string path) {
