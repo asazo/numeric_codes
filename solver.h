@@ -67,7 +67,7 @@ void ODESolver::save(const string path) {
     y0:       condicion inicial
     h:        step size
 */
-void ODESolver::rk4(double (*f)(double, double), double t0, double tmax, double y0, double h) {
+/*void ODESolver::rk4(double (*f)(double, double), double t0, double tmax, double y0, double h) {
     double ti = t0;
     double yi = y0;
     double s1, s2, s3, s4;
@@ -86,7 +86,7 @@ void ODESolver::rk4(double (*f)(double, double), double t0, double tmax, double 
         ti = t0 + (i + 1) * h;
         t.push_back(ti);
     }
-}
+}*/
 
 void ODESolver::euler_system(double (*f1)(double, double, double), double(*f2)(double, double, double), double t0, double tmax, double y1_0, double y2_0, double h) {
     double ti = t0;
@@ -194,10 +194,10 @@ void BVPSolver::save(const string path) {
 /*
     Implementación método del disparo
     Args:
-        f(t, y, y'):  lado derecho de BVP
-        t0, tmax: intervalo de resolución
-        y0:       condicion inicial
-        h:        step size
+        f1(t, y, y'):  lado derecho de BVP (sistema)
+        f2(t, y, y'):  lado derecho de BVP (sistema)
+        Sa, Sb: Pendientes
+        method: solver de ODE
 */
 void BVPSolver::solve_shooting(double (*f1)(double, double, double), double (*f2)(double, double, double), double Sa, double Sb, string method) {
     // Funcion para metodo de biseccion F(s), buscamos F(s) = 0
@@ -220,7 +220,7 @@ void BVPSolver::solve_shooting(double (*f1)(double, double, double), double (*f2
     while (n < max_iter) {
         c = 0.5 * (Sa + Sb);
         //cout << c << endl;
-        Fc = F(f1, f2, ta, tb, ya, yb, h, c, method); 
+        Fc = F(f1, f2, ta, tb, ya, yb, h, c, method);  // F(s)
         if (Fc == 0) {
             cout << "Resultado en pendiente " << c << endl;
             break;
@@ -240,7 +240,8 @@ void BVPSolver::solve_shooting(double (*f1)(double, double, double), double (*f2
     }
 
     ODESolver odesolver = ODESolver(method);
-    odesolver.rk4_system(f1, f2, ta, tb, ya, c, h);
+    //odesolver.rk4_system(f1, f2, ta, tb, ya, c, h);
+    odesolver.solve(f1, f2, ta, tb, ya, c, h);
     ysol = odesolver.ysol;
     t = odesolver.t;
 }

@@ -30,7 +30,7 @@ public:
     vector<T> b;
     Matriz<T> phi; // Respuesta
     T xl, xr, yb, yt, dx, dy;
-    int M, N;
+    int M, N; //linspace(a, b, M) <--> arange(a, b, dx) [a, b)
     int m, n;    
     void solve(T (*f)(T, T), T (*g1)(T), T (*g2)(T), T (*g3)(T), T (*g4)(T), T omega, T px, T py, T r);
     void set_empty_disk(T px, T py, T r);
@@ -104,6 +104,7 @@ void EllipticSolver<T>::buildSystem(T (*f)(T, T), T (*g1)(T), T (*g2)(T), T (*g3
         }
     }
 
+    // condiciones de borde
     for(int i = 0; i < m; i++) {
         int j = 0;
         A(i + j*m, i + j*m) = 1.0;
@@ -128,6 +129,7 @@ void EllipticSolver<T>::buildSystem(T (*f)(T, T), T (*g1)(T), T (*g2)(T), T (*g3
         for(int j = 0; j < n; j++) {
             double d = distance(x[i], y[j], px, py);
             if(d <= r) {
+                // cautela!
                 A(i + j*m, i + j*m) = -1000000;//;
                 //cout << A(i + j*m, i + j*m) << endl; //= 1.0;
                 b[i + j*m] = 1.0;
@@ -155,14 +157,13 @@ void EllipticSolver<T>::SOR(T w) {
 
     Matriz<T> wL = w * L;
     Matriz<T> inv = inversa(D + wL);
-    vector<T> xsol(b.size(), 0.0), xprev(b.size(), 0.0);
+    vector<T> xsol(b.size(), 0.0), xprev(b.size(), 0.0); //xsol(m*n)
 
     cout << "Begin SOR" << endl;
     int iter = 0;
     int max_iter = 500;
     while(iter < max_iter) {
         xprev = xsol;
-
         xsol = inv*((1 - w)*D*xprev - (w*U)*xprev) + (w*inv)*b;
         if(norm2(xprev - xsol) < 1e-14) { cout << "TOL reached" << endl; break; }
         iter++;

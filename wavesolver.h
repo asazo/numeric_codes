@@ -12,7 +12,7 @@ class WaveSolver {
     WaveSolver(T a, T b, T t0, T tmax, T c, T M, T N);
     ~WaveSolver();
     Matriz<T> U;
-    Matriz<T> A;
+    Matriz<T> A; // parametrizacion del espacio (linealización). U(0), U(1), U(2)
     T a;
     T b;
     T t0;
@@ -68,8 +68,8 @@ void WaveSolver<T>::gen_matriz_A(const int M, const T sigma) {
 
 template <class T>
 void WaveSolver<T>::solve_finitediff(T (*f)(T), T (*g)(T), T (*l)(T), T(*r)(T), T (*s)(T, T)) {
-    vector<T> xx(M, 0);
-    vector<T> tt(N, 0);
+    vector<T> xx(M, 0); // x = (x0, x1, x2, ..., x[m-1])
+    vector<T> tt(N, 0); //
     
     U = Matriz<T>(M, N);
 
@@ -90,6 +90,13 @@ void WaveSolver<T>::solve_finitediff(T (*f)(T), T (*g)(T), T (*l)(T), T(*r)(T), 
     for(int i = 0; i < M; i++) {
         U(i, 0) = f(xx[i]);
     }
+
+    /*  U(0,0) U(1,0), U(2,0) ... U(M-1, 0) // t=0   f(x, 0)
+        U(0,1) U(1,1), U(2,1) ... U(M-1, 1) // t=1
+        ...
+        U(0,25) U(1,25), U(2,25) ... U(M-1, 25) // t=25
+    */
+    
 
     // Condición de borde izquierda y derecha
     for(int j = 1; j < N; j++) {
@@ -115,7 +122,7 @@ void WaveSolver<T>::solve_finitediff(T (*f)(T), T (*g)(T), T (*l)(T), T(*r)(T), 
 
     // Siguientes time-steps
     vector<double> A_times_Uj;
-    for(int j = 2; j < N; j++) {
+    for(int j = 2; j < N; j++) { // t = 2 en adelante
         A_times_Uj = A * U.col(j - 1);
         for(int i = 1; i < M-1; i++) {
             U(i, j) = A_times_Uj[i] - U(i, j - 2) + dt*dt * s(xx[i], tt[j-1]);

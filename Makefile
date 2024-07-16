@@ -25,4 +25,4 @@ p3: p3.o solver.h
 
 
 clean:
-	rm -v *.o p3 p1
+	rm -v *.o p3 p2 p1

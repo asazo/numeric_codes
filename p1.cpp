@@ -5,7 +5,8 @@ using namespace std;
 
 // Condición inicial U(x, 0)
 double f(double x) {
-    return 0.0;//sin(3.141692 * x);
+    return 0.0;
+    //return sin(M_PI*x);//0.0;
 }
 
 // Condición de velocidad dU/dt(x, 0)
@@ -25,7 +26,7 @@ double r(double t) {
 
 // Source
 double s(double x, double t) {
-    return sin(t);
+    return sin(t); // 0.0;
 }
 
 int main() {
